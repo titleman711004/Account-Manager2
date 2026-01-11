@@ -28,19 +28,19 @@
         .item { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--card); border-radius: 18px; margin-bottom: 10px; border-left: 5px solid transparent; transition: opacity 0.3s; }
         .item.excluded { opacity: 0.4; }
         .bank-name { font-weight: 800; font-size: 18px; margin-bottom: 2px; }
-        .bank-amt { color: var(--accent); font-weight: 700; font-size: 16px; font-family: 'SF Mono', monospace; }
+        .bank-amt { color: var(--accent); font-weight: 700; font-size: 16px; font-family: 'SF Mono', monospace; white-space: nowrap; }
 
         .history-table { margin-top: 20px; background: rgba(0,0,0,0.2); border-radius: 20px; padding: 15px; }
-        .history-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 0.5px solid rgba(142,142,147,0.2); }
-        .date-input { background: var(--item); border: none; color: var(--text); padding: 6px; border-radius: 8px; font-size: 12px; width: 90px; }
+        .history-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 0.5px solid rgba(142,142,147,0.2); white-space: nowrap; }
+        .date-input { background: var(--item); border: none; color: var(--text); padding: 6px; border-radius: 8px; font-size: 12px; width: 90px; flex-shrink: 0; }
 
         .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 700; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-        .mini-btn { background: var(--item); color: var(--text); width: 32px; height: 32px; font-size: 12px; margin-left: 4px; }
-        .toggle-btn { font-size: 18px; background: none; border: none; cursor: pointer; padding: 0 5px; }
+        .mini-btn { background: var(--item); color: var(--text); width: 32px; height: 32px; font-size: 12px; margin-left: 4px; flex-shrink: 0; }
+        .toggle-btn { font-size: 18px; background: none; border: none; cursor: pointer; padding: 0 5px; flex-shrink: 0; }
 
         .management-section { margin-top: 40px; padding-top: 20px; border-top: 1px dashed var(--gray); }
         input { background: var(--item); border: none; color: var(--text); padding: 14px; border-radius: 14px; flex: 1; outline: none; font-size: 16px; width: 100%; box-sizing: border-box;}
-        footer { text-align: center; padding: 40px 0; color: var(--footer-text, #ffffff); font-size: 0.9rem; }
+        footer { text-align: center; padding: 40px 0; color: var(--gray); font-size: 0.9rem; }
     
     </style>
 </head>
@@ -132,10 +132,12 @@
         historyData.forEach((h, i) => {
             log.innerHTML += `<div class="history-row">
                 <input type="text" class="date-input" value="${h.time || ''}" onchange="editHDate(${i}, this.value)">
-                <span style="flex:1; font-weight:700; font-size:13px; text-align:center;">${(h.val || 0).toFixed(2)} 萬</span>
-                <button class="btn mini-btn" style="height:24px; width:24px;" onclick="move(historyData, ${i}, -1, '${KEY_HIS}')">▲</button>
-                <button class="btn mini-btn" style="height:24px; width:24px;" onclick="move(historyData, ${i}, 1, '${KEY_HIS}')">▼</button>
-                <button class="btn mini-btn" style="height:24px; width:24px; color:var(--danger)" onclick="delH(${i})">✕</button>
+                <span style="flex:1; font-weight:700; font-size:13px; text-align:center; padding: 0 4px;">${(h.val || 0).toFixed(2)} 萬</span>
+                <div style="display:flex; flex-shrink:0;">
+                    <button class="btn mini-btn" style="height:24px; width:24px;" onclick="move(historyData, ${i}, -1, '${KEY_HIS}')">▲</button>
+                    <button class="btn mini-btn" style="height:24px; width:24px;" onclick="move(historyData, ${i}, 1, '${KEY_HIS}')">▼</button>
+                    <button class="btn mini-btn" style="height:24px; width:24px; color:var(--danger)" onclick="delH(${i})">✕</button>
+                </div>
             </div>`;
         });
         updateCharts();
@@ -159,13 +161,28 @@
         Chart.defaults.color = themeColor;
         if(hChart) hChart.destroy(); if(bChart) bChart.destroy();
         
+        // 趨勢圖：日期標籤直向傾斜
         hChart = new Chart(document.getElementById('historyChart'), {
             type: 'line',
             data: {
                 labels: historyData.map(h => h.time || ''),
                 datasets: [{ data: historyData.map(h => h.val || 0), borderColor: '#FF453A', tension: 0.4, pointRadius: 4, fill: false }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        ticks: {
+                            autoSkip: true,
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                },
+                layout: { padding: { bottom: 25, left: 10, right: 10 } }
+            }
         });
 
         const activeAccs = accounts.filter(a => a.included !== false);
@@ -179,11 +196,24 @@
                     borderRadius: 6 
                 }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 45,
+                            minRotation: 0
+                        }
+                    }
+                },
+                layout: { padding: { bottom: 30, top: 10 } }
+            }
         });
     }
 
-    // --- 核心功能函數 ---
     function addAccount() {
         const n = document.getElementById('bankName'), b = document.getElementById('balance');
         if(!n.value || !b.value) return;
@@ -196,7 +226,6 @@
         if (newName === null) return;
         const newBalance = prompt("請輸入金額 (萬)：", accounts[i].balance);
         if (newBalance === null) return;
-
         if (newName.trim() !== "" && !isNaN(parseFloat(newBalance))) {
             accounts[i].name = newName;
             accounts[i].balance = parseFloat(newBalance);
