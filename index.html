@@ -40,9 +40,9 @@
 
         .management-section { margin-top: 40px; padding-top: 20px; border-top: 1px dashed var(--gray); }
         input { background: var(--item); border: none; color: var(--text); padding: 14px; border-radius: 14px; flex: 1; outline: none; font-size: 16px; width: 100%; box-sizing: border-box;}
-		footer { text-align: center; padding: 40px 0; color: var(--footer-text: #ffffff); font-size: 0.9rem; }
-	
-	</style>
+        footer { text-align: center; padding: 40px 0; color: var(--footer-text, #ffffff); font-size: 0.9rem; }
+    
+    </style>
 </head>
 <body>
 
@@ -108,12 +108,12 @@
         let total = 0;
 
         accounts.forEach((acc, i) => {
-            const isIncluded = acc.included !== false; // 預設為 true
+            const isIncluded = acc.included !== false; 
             if (isIncluded) total += (acc.balance || 0);
 
             const color = COLORS[i % COLORS.length];
             list.innerHTML += `<div class="item ${isIncluded ? '' : 'excluded'}" style="border-left-color: ${color}">
-                <div style="flex:1">
+                <div style="flex:1; cursor:pointer;" onclick="editAccount(${i})">
                     <div class="bank-name" style="color: ${color}">${acc.name || '未命名'}</div>
                     <div class="bank-amt">${(acc.balance || 0).toFixed(2)} 萬</div>
                 </div>
@@ -149,7 +149,6 @@
     function toggleHide() { isHidden = !isHidden; render(); }
 
     function takeSnapshot() {
-        // 結算時只計算「已勾選併入」的帳戶
         let total = accounts.reduce((s, a) => s + (a.included !== false ? (a.balance || 0) : 0), 0);
         historyData.push({ time: new Date().toISOString().split('T')[0], val: total });
         saveHis();
@@ -160,7 +159,6 @@
         Chart.defaults.color = themeColor;
         if(hChart) hChart.destroy(); if(bChart) bChart.destroy();
         
-        // 趨勢圖
         hChart = new Chart(document.getElementById('historyChart'), {
             type: 'line',
             data: {
@@ -170,7 +168,6 @@
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
-        // 長條圖：只顯示併入的帳戶
         const activeAccs = accounts.filter(a => a.included !== false);
         bChart = new Chart(document.getElementById('barChart'), {
             type: 'bar',
@@ -193,6 +190,22 @@
         accounts.push({ name: n.value, balance: parseFloat(b.value), included: true });
         save(); n.value = ''; b.value = '';
     }
+
+    function editAccount(i) {
+        const newName = prompt("請輸入銀行名稱：", accounts[i].name);
+        if (newName === null) return;
+        const newBalance = prompt("請輸入金額 (萬)：", accounts[i].balance);
+        if (newBalance === null) return;
+
+        if (newName.trim() !== "" && !isNaN(parseFloat(newBalance))) {
+            accounts[i].name = newName;
+            accounts[i].balance = parseFloat(newBalance);
+            save();
+        } else {
+            alert("輸入格式錯誤");
+        }
+    }
+
     function move(arr, i, dir, key) {
         let target = i + dir; if(target < 0 || target >= arr.length) return;
         [arr[i], arr[target]] = [arr[target], arr[i]];
@@ -240,4 +253,3 @@
 </script>
 </body>
 </html>
-
