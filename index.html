@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>資產管理</title>
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="資產管理">
+    <link rel="apple-touch-icon" href="icon.png"> 
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -15,7 +22,7 @@
             --accent: #007AFF; --success: #34C759; --danger: #FF3B30; --gray: #8E8E93;
         }
 
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px 16px 60px 16px; transition: 0.3s; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: calc(20px + env(safe-area-inset-top)) 16px 60px 16px; transition: 0.3s; }
         .container { max-width: 500px; margin: 0 auto; }
         
         .chart-card { background: var(--card); padding: 16px; border-radius: 20px; height: 260px; margin-bottom: 15px; position: relative; border: 1px solid rgba(255,255,255,0.05); }
@@ -28,20 +35,19 @@
         .item { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--card); border-radius: 18px; margin-bottom: 10px; border-left: 5px solid transparent; transition: opacity 0.3s; }
         .item.excluded { opacity: 0.4; }
         .bank-name { font-weight: 800; font-size: 18px; margin-bottom: 2px; }
-        .bank-amt { color: var(--accent); font-weight: 700; font-size: 16px; font-family: 'SF Mono', monospace; white-space: nowrap; }
+        .bank-amt { color: var(--accent); font-weight: 700; font-size: 16px; font-family: 'SF Mono', monospace; }
 
         .history-table { margin-top: 20px; background: rgba(0,0,0,0.2); border-radius: 20px; padding: 15px; }
-        .history-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 0.5px solid rgba(142,142,147,0.2); white-space: nowrap; }
-        .date-input { background: var(--item); border: none; color: var(--text); padding: 6px; border-radius: 8px; font-size: 12px; width: 90px; flex-shrink: 0; }
+        .history-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 0.5px solid rgba(142,142,147,0.2); }
+        .date-input { background: var(--item); border: none; color: var(--text); padding: 6px; border-radius: 8px; font-size: 12px; width: 90px; }
 
         .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 700; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-        .mini-btn { background: var(--item); color: var(--text); width: 32px; height: 32px; font-size: 12px; margin-left: 4px; flex-shrink: 0; }
-        .toggle-btn { font-size: 18px; background: none; border: none; cursor: pointer; padding: 0 5px; flex-shrink: 0; }
+        .mini-btn { background: var(--item); color: var(--text); width: 32px; height: 32px; font-size: 12px; margin-left: 4px; }
+        .toggle-btn { font-size: 18px; background: none; border: none; cursor: pointer; padding: 0 5px; }
 
         .management-section { margin-top: 40px; padding-top: 20px; border-top: 1px dashed var(--gray); }
         input { background: var(--item); border: none; color: var(--text); padding: 14px; border-radius: 14px; flex: 1; outline: none; font-size: 16px; width: 100%; box-sizing: border-box;}
         footer { text-align: center; padding: 40px 0; color: var(--gray); font-size: 0.9rem; }
-    
     </style>
 </head>
 <body>
@@ -132,12 +138,10 @@
         historyData.forEach((h, i) => {
             log.innerHTML += `<div class="history-row">
                 <input type="text" class="date-input" value="${h.time || ''}" onchange="editHDate(${i}, this.value)">
-                <span style="flex:1; font-weight:700; font-size:13px; text-align:center; padding: 0 4px;">${(h.val || 0).toFixed(2)} 萬</span>
-                <div style="display:flex; flex-shrink:0;">
-                    <button class="btn mini-btn" style="height:24px; width:24px;" onclick="move(historyData, ${i}, -1, '${KEY_HIS}')">▲</button>
-                    <button class="btn mini-btn" style="height:24px; width:24px;" onclick="move(historyData, ${i}, 1, '${KEY_HIS}')">▼</button>
-                    <button class="btn mini-btn" style="height:24px; width:24px; color:var(--danger)" onclick="delH(${i})">✕</button>
-                </div>
+                <span style="flex:1; font-weight:700; font-size:13px; text-align:center;">${(h.val || 0).toFixed(2)} 萬</span>
+                <button class="btn mini-btn" style="height:24px; width:24px;" onclick="move(historyData, ${i}, -1, '${KEY_HIS}')">▲</button>
+                <button class="btn mini-btn" style="height:24px; width:24px;" onclick="move(historyData, ${i}, 1, '${KEY_HIS}')">▼</button>
+                <button class="btn mini-btn" style="height:24px; width:24px; color:var(--danger)" onclick="delH(${i})">✕</button>
             </div>`;
         });
         updateCharts();
@@ -161,7 +165,6 @@
         Chart.defaults.color = themeColor;
         if(hChart) hChart.destroy(); if(bChart) bChart.destroy();
         
-        // 趨勢圖：日期標籤直向傾斜
         hChart = new Chart(document.getElementById('historyChart'), {
             type: 'line',
             data: {
@@ -169,19 +172,9 @@
                 datasets: [{ data: historyData.map(h => h.val || 0), borderColor: '#FF453A', tension: 0.4, pointRadius: 4, fill: false }]
             },
             options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
+                responsive: true, maintainAspectRatio: false, 
                 plugins: { legend: { display: false } },
-                scales: {
-                    x: {
-                        ticks: {
-                            autoSkip: true,
-                            maxRotation: 45,
-                            minRotation: 45
-                        }
-                    }
-                },
-                layout: { padding: { bottom: 25, left: 10, right: 10 } }
+                scales: { x: { ticks: { maxRotation: 45, minRotation: 45 } } } 
             }
         });
 
@@ -197,19 +190,9 @@
                 }]
             },
             options: { 
-                responsive: true, 
-                maintainAspectRatio: false, 
+                responsive: true, maintainAspectRatio: false, 
                 plugins: { legend: { display: false } },
-                scales: {
-                    x: {
-                        ticks: {
-                            autoSkip: false,
-                            maxRotation: 45,
-                            minRotation: 0
-                        }
-                    }
-                },
-                layout: { padding: { bottom: 30, top: 10 } }
+                scales: { x: { ticks: { maxRotation: 45, minRotation: 0 } } }
             }
         });
     }
@@ -226,6 +209,7 @@
         if (newName === null) return;
         const newBalance = prompt("請輸入金額 (萬)：", accounts[i].balance);
         if (newBalance === null) return;
+
         if (newName.trim() !== "" && !isNaN(parseFloat(newBalance))) {
             accounts[i].name = newName;
             accounts[i].balance = parseFloat(newBalance);
@@ -245,29 +229,46 @@
     function editHDate(i, val) { historyData[i].time = val; saveHis(); }
     function save() { localStorage.setItem(KEY_ACC, JSON.stringify(accounts)); render(); }
     function saveHis() { localStorage.setItem(KEY_HIS, JSON.stringify(historyData)); render(); }
+    
     function exportData() {
         const data = { [KEY_ACC]: accounts, [KEY_HIS]: historyData };
         const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
         const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `money_v34.json`; a.click();
     }
+
     function importData(e) {
+        const file = e.target.files[0];
+        if (!file) return;
         const reader = new FileReader();
         reader.onload = (f) => {
             try {
                 const raw = JSON.parse(f.target.result);
+                // 修正後的強力匯入邏輯
                 let newAcc = raw.ACCOUNT_DATA_V34 || raw.ACCOUNT_DATA_V33 || raw.accounts || (Array.isArray(raw) ? raw : []);
                 let newHis = raw.HISTORY_DATA_V34 || raw.HISTORY_DATA_V33 || raw.historyData || [];
-                localStorage.setItem(KEY_ACC, JSON.stringify(newAcc));
-                localStorage.setItem(KEY_HIS, JSON.stringify(newHis));
-                location.reload();
-            } catch(err) { alert("匯入失敗"); }
+                
+                // 確保每個項目都有正確欄位
+                accounts = newAcc.map(a => ({
+                    name: a.name || "未命名",
+                    balance: parseFloat(a.balance) || 0,
+                    included: a.included !== false
+                }));
+                historyData = newHis;
+                
+                save();
+                saveHis();
+                alert("✅ 匯入成功！");
+            } catch(err) { alert("❌ 匯入失敗，請檢查檔案內容"); }
         };
-        reader.readAsText(e.target.files[0]);
+        reader.readAsText(file);
+        e.target.value = '';
     }
+
     function toggleTheme() {
         const t = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
         document.body.setAttribute('data-theme', t); updateCharts();
     }
+
     function saveJPG(id) {
         const c = document.getElementById(id);
         const tempCanvas = document.createElement('canvas');
