@@ -4,13 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>資產管理</title>
-
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="資產管理">
-    <link rel="apple-touch-icon" href="icon.png"> 
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#000000">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -22,5 +15,270 @@
             --accent: #007AFF; --success: #34C759; --danger: #FF3B30; --gray: #8E8E93;
         }
 
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: calc(20px + env(safe-area-inset-top)) 16px 60px 16px; transition: 0.3s; }
-        .container { max-wid
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px 16px 60px 16px; transition: 0.3s; }
+        .container { max-width: 500px; margin: 0 auto; }
+        
+        .chart-card { background: var(--card); padding: 16px; border-radius: 20px; height: 260px; margin-bottom: 15px; position: relative; border: 1px solid rgba(255,255,255,0.05); }
+        .save-btn { position: absolute; right: 15px; top: 15px; background: rgba(142,142,147,0.3); border: none; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 10px; z-index: 10; cursor: pointer;}
+        
+        .main-card { background: linear-gradient(145deg, var(--card), var(--item)); padding: 24px; border-radius: 28px; text-align: center; margin-bottom: 20px; position: relative; }
+        .total-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
+        .total-val { font-size: 44px; font-weight: 900; color: var(--danger); letter-spacing: -1.5px; }
+        
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--card); border-radius: 18px; margin-bottom: 10px; border-left: 5px solid transparent; transition: opacity 0.3s; }
+        .item.excluded { opacity: 0.4; }
+        .bank-name { font-weight: 800; font-size: 18px; margin-bottom: 2px; }
+        .bank-amt { color: var(--accent); font-weight: 700; font-size: 16px; font-family: 'SF Mono', monospace; white-space: nowrap; }
+
+        .history-table { margin-top: 20px; background: rgba(0,0,0,0.2); border-radius: 20px; padding: 15px; }
+        .history-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 0.5px solid rgba(142,142,147,0.2); white-space: nowrap; }
+        .date-input { background: var(--item); border: none; color: var(--text); padding: 6px; border-radius: 8px; font-size: 12px; width: 90px; flex-shrink: 0; }
+
+        .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 700; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
+        .mini-btn { background: var(--item); color: var(--text); width: 32px; height: 32px; font-size: 12px; margin-left: 4px; flex-shrink: 0; }
+        .toggle-btn { font-size: 18px; background: none; border: none; cursor: pointer; padding: 0 5px; flex-shrink: 0; }
+
+        .management-section { margin-top: 40px; padding-top: 20px; border-top: 1px dashed var(--gray); }
+        input { background: var(--item); border: none; color: var(--text); padding: 14px; border-radius: 14px; flex: 1; outline: none; font-size: 16px; width: 100%; box-sizing: border-box;}
+        footer { text-align: center; padding: 40px 0; color: var(--gray); font-size: 0.9rem; }
+    
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h2 style="margin:0; font-weight: 800;">🏦 帳戶</h2>
+        <button class="btn mini-btn" style="width: auto; padding: 0 10px;" onclick="toggleTheme()">切換主題</button>
+    </div>
+
+    <div class="chart-card">
+        <button class="save-btn" onclick="saveJPG('historyChart')">📸</button>
+        <canvas id="historyChart"></canvas>
+    </div>
+    <div class="chart-card">
+        <button class="save-btn" onclick="saveJPG('barChart')">📸</button>
+        <canvas id="barChart"></canvas>
+    </div>
+
+    <div class="main-card">
+        <div style="font-size:11px; font-weight:700; opacity:0.6; letter-spacing: 1px;">資產總額</div>
+        <div class="total-container">
+            <div class="total-val" id="totalDisplay">0.00</div>
+            <button class="toggle-btn" onclick="toggleHide()">👁️</button>
+        </div>
+        <button class="btn" style="background:var(--success); color:#000; width:100%; padding:16px; margin-top:10px; font-size:16px; border-radius:15px; font-weight:700;" onclick="takeSnapshot()">🚀 資產結算並紀錄</button>
+        <div class="history-table" id="historyLog"></div>
+    </div>
+
+    <div id="accountList"></div>
+
+    <div class="management-section">
+        <div style="display:flex; gap:10px; margin-bottom:15px;">
+            <input type="text" id="bankName" placeholder="銀行名稱">
+            <input type="number" id="balance" placeholder="金額 (萬)">
+            <button class="btn" style="background:var(--accent); color:white; padding:0 20px;" onclick="addAccount()">新增</button>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button class="btn" style="flex:1; background:var(--card); color:var(--gray); padding:12px;" onclick="exportData()">💾 備份</button>
+            <button class="btn" style="flex:1; background:var(--card); color:var(--gray); padding:12px;" onclick="document.getElementById('fileInput').click()">📂 匯入</button>
+        </div>
+        <input type="file" id="fileInput" accept=".json" onchange="importData(event)" style="display:none">
+    </div>
+</div>
+
+<footer>2026 Copyright © Titleman</footer>
+
+<script>
+    const KEY_ACC = 'ACCOUNT_DATA_V34';
+    const KEY_HIS = 'HISTORY_DATA_V34';
+    const COLORS = ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#5856D6', '#AF52DE', '#FF2D55'];
+
+    let accounts = JSON.parse(localStorage.getItem(KEY_ACC)) || [];
+    let historyData = JSON.parse(localStorage.getItem(KEY_HIS)) || [];
+    let isHidden = false;
+    let hChart, bChart;
+
+    render();
+
+    function render() {
+        const list = document.getElementById('accountList');
+        const log = document.getElementById('historyLog');
+        list.innerHTML = '';
+        let total = 0;
+
+        accounts.forEach((acc, i) => {
+            const isIncluded = acc.included !== false; 
+            if (isIncluded) total += (acc.balance || 0);
+
+            const color = COLORS[i % COLORS.length];
+            list.innerHTML += `<div class="item ${isIncluded ? '' : 'excluded'}" style="border-left-color: ${color}">
+                <div style="flex:1; cursor:pointer;" onclick="editAccount(${i})">
+                    <div class="bank-name" style="color: ${color}">${acc.name || '未命名'}</div>
+                    <div class="bank-amt">${(acc.balance || 0).toFixed(2)} 萬</div>
+                </div>
+                <div style="display:flex; align-items:center;">
+                    <button class="toggle-btn" title="是否併入總資產" onclick="toggleInclude(${i})">${isIncluded ? '💡' : '🌙'}</button>
+                    <button class="btn mini-btn" onclick="move(accounts, ${i}, -1, '${KEY_ACC}')">▲</button>
+                    <button class="btn mini-btn" onclick="move(accounts, ${i}, 1, '${KEY_ACC}')">▼</button>
+                    <button class="btn mini-btn" style="color:var(--danger)" onclick="delAcc(${i})">✕</button>
+                </div>
+            </div>`;
+        });
+
+        document.getElementById('totalDisplay').innerText = isHidden ? '****' : total.toFixed(2);
+
+        log.innerHTML = '<div style="font-size:11px; color:var(--gray); text-align:left; margin-bottom:10px; font-weight: 700;">歷史紀錄管理</div>';
+        historyData.forEach((h, i) => {
+            log.innerHTML += `<div class="history-row">
+                <input type="text" class="date-input" value="${h.time || ''}" onchange="editHDate(${i}, this.value)">
+                <span style="flex:1; font-weight:700; font-size:13px; text-align:center; padding: 0 4px;">${(h.val || 0).toFixed(2)} 萬</span>
+                <div style="display:flex; flex-shrink:0;">
+                    <button class="btn mini-btn" style="height:24px; width:24px;" onclick="move(historyData, ${i}, -1, '${KEY_HIS}')">▲</button>
+                    <button class="btn mini-btn" style="height:24px; width:24px;" onclick="move(historyData, ${i}, 1, '${KEY_HIS}')">▼</button>
+                    <button class="btn mini-btn" style="height:24px; width:24px; color:var(--danger)" onclick="delH(${i})">✕</button>
+                </div>
+            </div>`;
+        });
+        updateCharts();
+    }
+
+    function toggleInclude(index) {
+        accounts[index].included = accounts[index].included === false ? true : false;
+        save();
+    }
+
+    function toggleHide() { isHidden = !isHidden; render(); }
+
+    function takeSnapshot() {
+        let total = accounts.reduce((s, a) => s + (a.included !== false ? (a.balance || 0) : 0), 0);
+        historyData.push({ time: new Date().toISOString().split('T')[0], val: total });
+        saveHis();
+    }
+
+    function updateCharts() {
+        const themeColor = getComputedStyle(document.body).getPropertyValue('--text').trim();
+        Chart.defaults.color = themeColor;
+        if(hChart) hChart.destroy(); if(bChart) bChart.destroy();
+        
+        // 趨勢圖：日期標籤直向傾斜
+        hChart = new Chart(document.getElementById('historyChart'), {
+            type: 'line',
+            data: {
+                labels: historyData.map(h => h.time || ''),
+                datasets: [{ data: historyData.map(h => h.val || 0), borderColor: '#FF453A', tension: 0.4, pointRadius: 4, fill: false }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        ticks: {
+                            autoSkip: true,
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    }
+                },
+                layout: { padding: { bottom: 25, left: 10, right: 10 } }
+            }
+        });
+
+        const activeAccs = accounts.filter(a => a.included !== false);
+        bChart = new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: activeAccs.map(a => a.name || '未命名'),
+                datasets: [{ 
+                    data: activeAccs.map(a => a.balance || 0), 
+                    backgroundColor: activeAccs.map(a => COLORS[accounts.indexOf(a) % COLORS.length]), 
+                    borderRadius: 6 
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: {
+                        ticks: {
+                            autoSkip: false,
+                            maxRotation: 45,
+                            minRotation: 0
+                        }
+                    }
+                },
+                layout: { padding: { bottom: 30, top: 10 } }
+            }
+        });
+    }
+
+    function addAccount() {
+        const n = document.getElementById('bankName'), b = document.getElementById('balance');
+        if(!n.value || !b.value) return;
+        accounts.push({ name: n.value, balance: parseFloat(b.value), included: true });
+        save(); n.value = ''; b.value = '';
+    }
+
+    function editAccount(i) {
+        const newName = prompt("請輸入銀行名稱：", accounts[i].name);
+        if (newName === null) return;
+        const newBalance = prompt("請輸入金額 (萬)：", accounts[i].balance);
+        if (newBalance === null) return;
+        if (newName.trim() !== "" && !isNaN(parseFloat(newBalance))) {
+            accounts[i].name = newName;
+            accounts[i].balance = parseFloat(newBalance);
+            save();
+        } else {
+            alert("輸入格式錯誤");
+        }
+    }
+
+    function move(arr, i, dir, key) {
+        let target = i + dir; if(target < 0 || target >= arr.length) return;
+        [arr[i], arr[target]] = [arr[target], arr[i]];
+        localStorage.setItem(key, JSON.stringify(arr)); render();
+    }
+    function delAcc(i) { if(confirm('確定刪除？')) { accounts.splice(i,1); save(); } }
+    function delH(i) { if(confirm('刪除紀錄？')) { historyData.splice(i,1); saveHis(); } }
+    function editHDate(i, val) { historyData[i].time = val; saveHis(); }
+    function save() { localStorage.setItem(KEY_ACC, JSON.stringify(accounts)); render(); }
+    function saveHis() { localStorage.setItem(KEY_HIS, JSON.stringify(historyData)); render(); }
+    function exportData() {
+        const data = { [KEY_ACC]: accounts, [KEY_HIS]: historyData };
+        const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `money_v34.json`; a.click();
+    }
+    function importData(e) {
+        const reader = new FileReader();
+        reader.onload = (f) => {
+            try {
+                const raw = JSON.parse(f.target.result);
+                let newAcc = raw.ACCOUNT_DATA_V34 || raw.ACCOUNT_DATA_V33 || raw.accounts || (Array.isArray(raw) ? raw : []);
+                let newHis = raw.HISTORY_DATA_V34 || raw.HISTORY_DATA_V33 || raw.historyData || [];
+                localStorage.setItem(KEY_ACC, JSON.stringify(newAcc));
+                localStorage.setItem(KEY_HIS, JSON.stringify(newHis));
+                location.reload();
+            } catch(err) { alert("匯入失敗"); }
+        };
+        reader.readAsText(e.target.files[0]);
+    }
+    function toggleTheme() {
+        const t = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        document.body.setAttribute('data-theme', t); updateCharts();
+    }
+    function saveJPG(id) {
+        const c = document.getElementById(id);
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = c.width; tempCanvas.height = c.height;
+        const ctx = tempCanvas.getContext('2d');
+        ctx.fillStyle = getComputedStyle(document.body).getPropertyValue('--card').trim();
+        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        ctx.drawImage(c, 0, 0);
+        const link = document.createElement('a');
+        link.download = `${id}.jpg`; link.href = tempCanvas.toDataURL('image/jpeg', 0.9); link.click();
+    }
+</script>
+</body>
+</html>
