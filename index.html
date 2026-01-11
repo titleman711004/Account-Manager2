@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>資產帳戶管家</title>
+    <title>資產管理</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -18,29 +18,25 @@
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px 16px 60px 16px; transition: 0.3s; }
         .container { max-width: 500px; margin: 0 auto; }
         
-        /* 圖表卡片 */
         .chart-card { background: var(--card); padding: 16px; border-radius: 20px; height: 260px; margin-bottom: 15px; position: relative; border: 1px solid rgba(255,255,255,0.05); }
         .save-btn { position: absolute; right: 15px; top: 15px; background: rgba(142,142,147,0.3); border: none; color: #fff; padding: 4px 8px; border-radius: 6px; font-size: 10px; z-index: 10; cursor: pointer;}
         
-        /* 總資產卡片 */
         .main-card { background: linear-gradient(145deg, var(--card), var(--item)); padding: 24px; border-radius: 28px; text-align: center; margin-bottom: 20px; position: relative; }
         .total-container { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
         .total-val { font-size: 44px; font-weight: 900; color: var(--danger); letter-spacing: -1.5px; }
-        .hide-btn { background: none; border: none; color: var(--gray); font-size: 24px; cursor: pointer; padding: 5px; }
         
-        /* 帳戶項目：加入名稱色彩 */
-        .item { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--card); border-radius: 18px; margin-bottom: 10px; border-left: 5px solid transparent; }
+        .item { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: var(--card); border-radius: 18px; margin-bottom: 10px; border-left: 5px solid transparent; transition: opacity 0.3s; }
+        .item.excluded { opacity: 0.4; }
         .bank-name { font-weight: 800; font-size: 18px; margin-bottom: 2px; }
-        .bank-amt { color: var(--accent); font-weight: 700; font-size: 16px; font-family: 'SF Mono', monospace; opacity: 0.9; }
+        .bank-amt { color: var(--accent); font-weight: 700; font-size: 16px; font-family: 'SF Mono', monospace; }
 
-        /* 歷史表格 */
         .history-table { margin-top: 20px; background: rgba(0,0,0,0.2); border-radius: 20px; padding: 15px; }
         .history-row { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 0.5px solid rgba(142,142,147,0.2); }
         .date-input { background: var(--item); border: none; color: var(--text); padding: 6px; border-radius: 8px; font-size: 12px; width: 90px; }
 
         .btn { border: none; border-radius: 12px; cursor: pointer; font-weight: 700; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
-        .btn-snapshot { background: var(--success); color: #000; width: 100%; padding: 16px; margin-top: 15px; font-size: 16px; }
         .mini-btn { background: var(--item); color: var(--text); width: 32px; height: 32px; font-size: 12px; margin-left: 4px; }
+        .toggle-btn { font-size: 18px; background: none; border: none; cursor: pointer; padding: 0 5px; }
 
         .management-section { margin-top: 40px; padding-top: 20px; border-top: 1px dashed var(--gray); }
         input { background: var(--item); border: none; color: var(--text); padding: 14px; border-radius: 14px; flex: 1; outline: none; font-size: 16px; width: 100%; box-sizing: border-box;}
@@ -52,7 +48,7 @@
 
 <div class="container">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-        <h2 style="margin:0; font-weight: 800;">🏦 帳戶管家</h2>
+        <h2 style="margin:0; font-weight: 800;">🏦 帳戶</h2>
         <button class="btn mini-btn" style="width: auto; padding: 0 10px;" onclick="toggleTheme()">切換主題</button>
     </div>
 
@@ -60,20 +56,18 @@
         <button class="save-btn" onclick="saveJPG('historyChart')">📸</button>
         <canvas id="historyChart"></canvas>
     </div>
-    
     <div class="chart-card">
         <button class="save-btn" onclick="saveJPG('barChart')">📸</button>
         <canvas id="barChart"></canvas>
     </div>
 
     <div class="main-card">
-        <div style="font-size:11px; font-weight:700; opacity:0.6; letter-spacing: 1px;">總資產</div>
+        <div style="font-size:11px; font-weight:700; opacity:0.6; letter-spacing: 1px;">資產總額</div>
         <div class="total-container">
             <div class="total-val" id="totalDisplay">0.00</div>
-            <button class="hide-btn" onclick="toggleHide()">👁️</button>
+            <button class="toggle-btn" onclick="toggleHide()">👁️</button>
         </div>
-        <button class="btn btn-snapshot" onclick="takeSnapshot()">🚀 資產結算紀錄</button>
-        
+        <button class="btn" style="background:var(--success); color:#000; width:100%; padding:16px; margin-top:10px; font-size:16px; border-radius:15px; font-weight:700;" onclick="takeSnapshot()">🚀 結算並更新趨勢紀錄</button>
         <div class="history-table" id="historyLog"></div>
     </div>
 
@@ -96,9 +90,8 @@
 <footer>2026 Copyright © Titleman</footer>
 
 <script>
-    const KEY_ACC = 'ACCOUNT_DATA_V33';
-    const KEY_HIS = 'HISTORY_DATA_V33';
-    // 鮮明配色方案
+    const KEY_ACC = 'ACCOUNT_DATA_V34';
+    const KEY_HIS = 'HISTORY_DATA_V34';
     const COLORS = ['#FF3B30', '#FF9500', '#FFCC00', '#34C759', '#007AFF', '#5856D6', '#AF52DE', '#FF2D55'];
 
     let accounts = JSON.parse(localStorage.getItem(KEY_ACC)) || [];
@@ -115,14 +108,17 @@
         let total = 0;
 
         accounts.forEach((acc, i) => {
-            total += (acc.balance || 0);
+            const isIncluded = acc.included !== false; // 預設為 true
+            if (isIncluded) total += (acc.balance || 0);
+
             const color = COLORS[i % COLORS.length];
-            list.innerHTML += `<div class="item" style="border-left-color: ${color}">
-                <div>
+            list.innerHTML += `<div class="item ${isIncluded ? '' : 'excluded'}" style="border-left-color: ${color}">
+                <div style="flex:1">
                     <div class="bank-name" style="color: ${color}">${acc.name || '未命名'}</div>
                     <div class="bank-amt">${(acc.balance || 0).toFixed(2)} 萬</div>
                 </div>
-                <div style="display:flex;">
+                <div style="display:flex; align-items:center;">
+                    <button class="toggle-btn" title="是否併入總資產" onclick="toggleInclude(${i})">${isIncluded ? '💡' : '🌙'}</button>
                     <button class="btn mini-btn" onclick="move(accounts, ${i}, -1, '${KEY_ACC}')">▲</button>
                     <button class="btn mini-btn" onclick="move(accounts, ${i}, 1, '${KEY_ACC}')">▼</button>
                     <button class="btn mini-btn" style="color:var(--danger)" onclick="delAcc(${i})">✕</button>
@@ -145,10 +141,16 @@
         updateCharts();
     }
 
+    function toggleInclude(index) {
+        accounts[index].included = accounts[index].included === false ? true : false;
+        save();
+    }
+
     function toggleHide() { isHidden = !isHidden; render(); }
 
     function takeSnapshot() {
-        let total = accounts.reduce((s, a) => s + (a.balance || 0), 0);
+        // 結算時只計算「已勾選併入」的帳戶
+        let total = accounts.reduce((s, a) => s + (a.included !== false ? (a.balance || 0) : 0), 0);
         historyData.push({ time: new Date().toISOString().split('T')[0], val: total });
         saveHis();
     }
@@ -158,53 +160,39 @@
         Chart.defaults.color = themeColor;
         if(hChart) hChart.destroy(); if(bChart) bChart.destroy();
         
-        const hLabels = historyData.length > 0 ? historyData.map(h => h.time || '') : ['無數據'];
-        const hValues = historyData.length > 0 ? historyData.map(h => h.val || 0) : [0];
-
+        // 趨勢圖
         hChart = new Chart(document.getElementById('historyChart'), {
             type: 'line',
             data: {
-                labels: hLabels,
-                datasets: [{ data: hValues, borderColor: '#FF453A', tension: 0.4, pointRadius: 4, fill: false }]
+                labels: historyData.map(h => h.time || ''),
+                datasets: [{ data: historyData.map(h => h.val || 0), borderColor: '#FF453A', tension: 0.4, pointRadius: 4, fill: false }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v+'萬' } } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
 
-        const bLabels = accounts.length > 0 ? accounts.map(a => a.name || '未命名') : ['無帳戶'];
-        const bValues = accounts.length > 0 ? accounts.map(a => a.balance || 0) : [0];
-
+        // 長條圖：只顯示併入的帳戶
+        const activeAccs = accounts.filter(a => a.included !== false);
         bChart = new Chart(document.getElementById('barChart'), {
             type: 'bar',
             data: {
-                labels: bLabels,
-                datasets: [{ data: bValues, backgroundColor: accounts.map((_,i) => COLORS[i%COLORS.length]), borderRadius: 6 }]
+                labels: activeAccs.map(a => a.name || '未命名'),
+                datasets: [{ 
+                    data: activeAccs.map(a => a.balance || 0), 
+                    backgroundColor: activeAccs.map(a => COLORS[accounts.indexOf(a) % COLORS.length]), 
+                    borderRadius: 6 
+                }]
             },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => v+'萬' } } } }
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
         });
     }
 
-    function importData(e) {
-        const reader = new FileReader();
-        reader.onload = (f) => {
-            try {
-                const raw = JSON.parse(f.target.result);
-                let newAcc = raw.ACCOUNT_DATA_V33 || raw.ACCOUNT_DATA_V32 || raw.accounts || (Array.isArray(raw) ? raw : []);
-                let newHis = raw.HISTORY_DATA_V33 || raw.HISTORY_DATA_V32 || raw.historyData || [];
-                localStorage.setItem(KEY_ACC, JSON.stringify(newAcc));
-                localStorage.setItem(KEY_HIS, JSON.stringify(newHis));
-                location.reload();
-            } catch(err) { alert("匯入失敗"); }
-        };
-        reader.readAsText(e.target.files[0]);
-    }
-
+    // --- 核心功能函數 ---
     function addAccount() {
         const n = document.getElementById('bankName'), b = document.getElementById('balance');
         if(!n.value || !b.value) return;
-        accounts.push({ name: n.value, balance: parseFloat(b.value) });
+        accounts.push({ name: n.value, balance: parseFloat(b.value), included: true });
         save(); n.value = ''; b.value = '';
     }
-
     function move(arr, i, dir, key) {
         let target = i + dir; if(target < 0 || target >= arr.length) return;
         [arr[i], arr[target]] = [arr[target], arr[i]];
@@ -218,7 +206,21 @@
     function exportData() {
         const data = { [KEY_ACC]: accounts, [KEY_HIS]: historyData };
         const blob = new Blob([JSON.stringify(data)], {type: "application/json"});
-        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `backup_v33.json`; a.click();
+        const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `money_v34.json`; a.click();
+    }
+    function importData(e) {
+        const reader = new FileReader();
+        reader.onload = (f) => {
+            try {
+                const raw = JSON.parse(f.target.result);
+                let newAcc = raw.ACCOUNT_DATA_V34 || raw.ACCOUNT_DATA_V33 || raw.accounts || (Array.isArray(raw) ? raw : []);
+                let newHis = raw.HISTORY_DATA_V34 || raw.HISTORY_DATA_V33 || raw.historyData || [];
+                localStorage.setItem(KEY_ACC, JSON.stringify(newAcc));
+                localStorage.setItem(KEY_HIS, JSON.stringify(newHis));
+                location.reload();
+            } catch(err) { alert("匯入失敗"); }
+        };
+        reader.readAsText(e.target.files[0]);
     }
     function toggleTheme() {
         const t = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
